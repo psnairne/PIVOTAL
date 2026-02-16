@@ -7,7 +7,6 @@ use crate::hgnc::traits::HGNCData;
 use std::fmt::{Debug, Formatter};
 use std::path::PathBuf;
 
-#[derive(Default)]
 pub struct CachedHGNCClient {
     cacher: RedbCacher<GeneDoc>,
     hgnc_client: HGNCClient,
@@ -29,6 +28,16 @@ impl HGNCData for CachedHGNCClient {
 impl CachedHGNCClient {
     pub fn new(cache_file_path: PathBuf, hgnc_client: HGNCClient) -> Result<Self, HGNCError> {
         let cacher = RedbCacher::new(cache_file_path);
+        cacher.init_cache()?;
+        Ok(CachedHGNCClient {
+            cacher,
+            hgnc_client,
+        })
+    }
+
+    pub fn new_with_defaults() -> Result<Self, HGNCError> {
+        let cacher = RedbCacher::default();
+        let hgnc_client = HGNCClient::default();
         cacher.init_cache()?;
         Ok(CachedHGNCClient {
             cacher,
