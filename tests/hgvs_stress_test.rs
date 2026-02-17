@@ -1,6 +1,22 @@
 use pivot::hgvs::{HGVSClient, HGVSData};
 use rstest::{fixture, rstest};
 
+#[macro_export]
+macro_rules! skip_in_ci {
+    ($test_name:expr) => {
+        if std::env::var("CI").is_ok() {
+            println!("Skipping {} in CI environment", $test_name);
+            return;
+        }
+    };
+    () => {
+        if std::env::var("CI").is_ok() {
+            println!("Skipping {} in CI environment", module_path!());
+            return;
+        }
+    };
+}
+
 fn create_hgvs_variants_from_transcript(
     transcript_name: &str,
     transcript_bases: &str,
@@ -38,6 +54,7 @@ fn kif21a_transcript_name() -> String {
 
 #[rstest]
 fn hgvs_stress_test(kif21a_transcript_beginning: String, kif21a_transcript_name: String) {
+    skip_in_ci!();
     let client = HGVSClient::default();
     let unvalidated_hgvs_strings = create_hgvs_variants_from_transcript(
         kif21a_transcript_name.as_str(),

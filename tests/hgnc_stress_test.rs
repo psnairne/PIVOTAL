@@ -1,6 +1,22 @@
 use pivot::hgnc::{GeneQuery, HGNCClient, HGNCData};
 use rstest::{fixture, rstest};
 
+#[macro_export]
+macro_rules! skip_in_ci {
+    ($test_name:expr) => {
+        if std::env::var("CI").is_ok() {
+            println!("Skipping {} in CI environment", $test_name);
+            return;
+        }
+    };
+    () => {
+        if std::env::var("CI").is_ok() {
+            println!("Skipping {} in CI environment", module_path!());
+            return;
+        }
+    };
+}
+
 // found here: https://www.genenames.org/download/statistics-and-files/
 // 319 genes
 #[fixture]
@@ -329,6 +345,7 @@ ADD2"
 
 #[rstest]
 fn hgnc_stress_test(genes: String) {
+    skip_in_ci!();
     let client = HGNCClient::default();
     let gene_vec = genes.lines().collect::<Vec<&str>>();
     for gene in gene_vec {
