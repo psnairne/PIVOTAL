@@ -26,7 +26,7 @@ pub struct HGVSClient {
 
 impl Default for HGVSClient {
     fn default() -> Self {
-        let rate_limiter = Ratelimiter::builder(2, Duration::from_secs(1))
+        let rate_limiter = Ratelimiter::builder(2, Duration::from_millis(1180))
             .max_tokens(2)
             .build()
             .expect("Building rate limiter failed");
