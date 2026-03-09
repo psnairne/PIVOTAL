@@ -102,6 +102,8 @@ impl HGVSClient {
                         err: err.to_string(),
                     }
                 });
+            } else {
+                sleep(Duration::from_secs(3));
             }
         }
 

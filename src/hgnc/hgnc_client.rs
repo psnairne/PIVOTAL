@@ -52,6 +52,8 @@ impl HGNCClient {
             {
                 let gene_response = response.json::<GeneResponse>()?;
                 return Ok(gene_response.response.docs);
+            } else {
+                sleep(Duration::from_secs(3));
             }
         }
 
