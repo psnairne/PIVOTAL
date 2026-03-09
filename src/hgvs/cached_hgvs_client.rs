@@ -30,7 +30,10 @@ pub struct CachedHGVSClient {
 impl CachedHGVSClient {
     pub fn new(cache_file_path: PathBuf, hgvs_client: HGVSClient) -> Result<Self, HGVSError> {
         let cacher = RedbCacher::new(cache_file_path);
-        cacher.init_cache()?;
+        {
+            let _guard = lock_mutex(hgvs_cache_mutex())?;
+            cacher.init_cache()?;
+        }
         Ok(CachedHGVSClient {
             cacher,
             hgvs_client,
@@ -40,7 +43,10 @@ impl CachedHGVSClient {
     pub fn new_with_defaults() -> Result<Self, HGVSError> {
         let cacher = RedbCacher::default();
         let hgvs_client = HGVSClient::default();
-        cacher.init_cache()?;
+        {
+            let _guard = lock_mutex(hgvs_cache_mutex())?;
+            cacher.init_cache()?;
+        }
         Ok(CachedHGVSClient {
             cacher,
             hgvs_client,
