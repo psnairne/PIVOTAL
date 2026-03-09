@@ -89,7 +89,7 @@ impl HGVSClient {
 
             let response = self
                 .client
-                .get(fetch_url.clone())
+                .get(fetch_url)
                 .header("User-Agent", "PIVOT")
                 .header("Accept", "application/json")
                 .send()

@@ -23,13 +23,13 @@ impl HGNCClient {
         }
     }
 
-    fn fetch_request(&self, url: String) -> Result<Vec<GeneDoc>, HGNCError> {
+    fn fetch_request(&self, url: &str) -> Result<Vec<GeneDoc>, HGNCError> {
         if let Err(duration) = self.rate_limiter.try_wait() {
             sleep(duration);
         }
         let response = self
             .client
-            .get(url.clone())
+            .get(url)
             .header("User-Agent", "PIVOT")
             .header("Accept", "application/json")
             .send()?;
@@ -46,7 +46,7 @@ impl HGNCData for HGNCClient {
             GeneQuery::Symbol(symbol) => format!("{}fetch/symbol/{}", self.api_url, symbol),
             GeneQuery::HgncId(id) => format!("{}fetch/hgnc_id/{}", self.api_url, id),
         };
-        let docs = self.fetch_request(fetch_url)?;
+        let docs = self.fetch_request(&fetch_url)?;
 
         if docs.len() == 1 {
             Ok(docs.first().unwrap().clone())
