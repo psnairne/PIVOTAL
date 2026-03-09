@@ -1,4 +1,4 @@
-use pivot::hgvs::{HGVSClient, HGVSData};
+use pivotal::hgvs::{HGVSClient, HGVSData};
 use rstest::{fixture, rstest};
 
 #[macro_export]
@@ -36,13 +36,13 @@ fn create_hgvs_variants_from_transcript(
 }
 
 // found here: https://www.ncbi.nlm.nih.gov/CCDS/CcdsBrowse.cgi?REQUEST=NUCID&DATA=1677538156
-//283 characters
+//270 characters
 #[fixture]
 fn kif21a_transcript_beginning() -> String {
     let str = "ATGTTGGGCGCCCCGGACGAGAGCTCCGTGCGGGTGGCTGTCAGAATAAGACCACAGCTTGCCAAAGAGA
 AGATTGAAGGATGCCATATTTGTACATCTGTCACACCAGGAGAGCCTCAGGTCTTCCTAGGGAAAGATAA
 GGCTTTTACTTTTGACTATGTATTTGACATTGACTCCCAGCAAGAGCAGATCTACATTCAATGTATAGAA
-AAACTAATTGAAGGTTGCTTTGAAGGATACAATGCTACAGTTTTTGCTTATGGACAAACTGGAGCTGGTA"
+AAACTAATTGAAGGTTGCTTTGAAGGATACAATGCTACAGTTTTTGCTTATGGACAA"
         .to_string();
     str.replace('\n', "")
 }

@@ -1,16 +1,18 @@
 [package]
-authors = ["Peter Robinson, Rouven Router, Patrick Nairne"]
-description = "A Rust library for shared tools between different Phenopacket extraction programs."
+authors = ["Patrick Nairne, Rouven Reuter"]
+description = "A Rust library for retrieving data from the VariantValidator and HGNC APIs for Phenopackets."
 edition = "2024"
 homepage = "https://robinsongroup.github.io/"
-license = "MIT"
-name = "pivot"
-version = "0.1.4"
+license-file = "LICENSE"
+name = "pivotal"
+version = "0.1.6"
+keywords = ["variant", "validator", "hgnc", "hgvs", "phenopacket"]
+readme = "README.md"
+repository = "https://github.com/psnairne/PIVOT"
 
 
 [dependencies]
 phenopackets = { version = "0.2.2-post1", features = ["serde"] }
-rstest = "0.26.1"
 serde = "1.0.228"
 thiserror = "2.0.17"
 ratelimit = "0.10.0"

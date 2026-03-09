@@ -11,13 +11,24 @@ use reqwest::blocking::Client;
 use serde_json::Value;
 use std::fmt::Debug;
 use std::string::ToString;
+use std::sync::OnceLock;
 use std::thread::sleep;
 use std::time::Duration;
 
 const ALLOWED_FLAGS: [&str; 2] = ["gene_variant", "mitochondrial"];
 
+static HGVS_RATE_LIMITER: OnceLock<Ratelimiter> = OnceLock::new();
+
+fn hgvs_rate_limiter() -> &'static Ratelimiter {
+    HGVS_RATE_LIMITER.get_or_init(|| {
+        Ratelimiter::builder(2, Duration::from_millis(1250))
+            .max_tokens(2)
+            .build()
+            .expect("Building rate limiter failed")
+    })
+}
+
 pub struct HGVSClient {
-    rate_limiter: Ratelimiter,
     attempts: usize,
     api_url: String,
     client: Client,
@@ -26,19 +37,9 @@ pub struct HGVSClient {
 
 impl Default for HGVSClient {
     fn default() -> Self {
-        let rate_limiter = Ratelimiter::builder(2, Duration::from_millis(1180))
-            .max_tokens(2)
-            .build()
-            .expect("Building rate limiter failed");
         let api_url =
             "https://rest.variantvalidator.org/VariantValidator/variantvalidator/".to_string();
-        HGVSClient::new(
-            rate_limiter,
-            3,
-            api_url.to_string(),
-            Client::new(),
-            GenomeAssembly::Hg38,
-        )
+        HGVSClient::new(3, api_url.to_string(), Client::new(), GenomeAssembly::Hg38)
     }
 }
 
@@ -55,14 +56,12 @@ impl Debug for HGVSClient {
 
 impl HGVSClient {
     pub fn new(
-        rate_limiter: Ratelimiter,
         attempts: usize,
         api_url: String,
         client: Client,
         genome_assembly: GenomeAssembly,
     ) -> Self {
         HGVSClient {
-            rate_limiter,
             attempts,
             api_url,
             client,
@@ -79,26 +78,24 @@ impl HGVSClient {
 
     fn fetch_request(
         &self,
-        fetch_url: String,
+        fetch_url: &str,
         unvalidated_hgvs: &str,
     ) -> Result<VariantValidatorResponse, HGVSError> {
         for _ in 0..self.attempts {
-            if let Err(duration) = self.rate_limiter.try_wait() {
+            if let Err(duration) = hgvs_rate_limiter().try_wait() {
                 sleep(duration);
             }
 
             let response = self
                 .client
-                .get(fetch_url.clone())
+                .get(fetch_url)
                 .header("User-Agent", "PIVOT")
                 .header("Accept", "application/json")
-                .send()
-                .map_err(|err| HGVSError::FetchRequest {
-                    hgvs: unvalidated_hgvs.to_string(),
-                    err: err.to_string(),
-                })?;
+                .send();
 
-            if response.status().is_success() {
+            if let Ok(response) = response
+                && response.status().is_success()
+            {
                 return response.json::<VariantValidatorResponse>().map_err(|err| {
                     HGVSError::DeserializeVariantValidatorResponseToSchema {
                         hgvs: unvalidated_hgvs.to_string(),
@@ -169,7 +166,7 @@ impl HGVSData for HGVSClient {
 
         let fetch_url = self.get_fetch_url(transcript, allele);
 
-        let response = self.fetch_request(fetch_url.clone(), unvalidated_hgvs)?;
+        let response = self.fetch_request(&fetch_url, unvalidated_hgvs)?;
 
         let variant_info = Self::get_variant_info_for_valid_hgvs(unvalidated_hgvs, response)?;
 
@@ -245,49 +242,48 @@ mod tests {
     use crate::hgvs::traits::HGVSData;
     use rstest::{fixture, rstest};
 
-    // this forces tests to run sequentially
-    #[rstest]
-    fn hgvs_client_tests() {
-        let client = HGVSClient::default();
-        test_request_and_validate_hgvs_c_autosomal(&client);
-        test_request_and_validate_hgvs_c_x(&client);
-        test_request_and_validate_hgvs_n(&client);
-        test_request_and_validate_hgvs_m(&client);
-        test_request_and_validate_hgvs_wrong_reference_base_err(&client);
-        test_request_and_validate_hgvs_not_c_or_n_hgvs_err(&client);
+    #[fixture]
+    fn client() -> HGVSClient {
+        HGVSClient::default()
     }
 
-    fn test_request_and_validate_hgvs_c_autosomal(client: &HGVSClient) {
+    #[rstest]
+    fn test_request_and_validate_hgvs_c_autosomal(client: HGVSClient) {
         let unvalidated_hgvs = "NM_001173464.1:c.2860C>T";
         let validated_hgvs = client.request_and_validate_hgvs(unvalidated_hgvs).unwrap();
         assert_eq!(validated_hgvs.transcript_hgvs(), unvalidated_hgvs);
     }
 
-    fn test_request_and_validate_hgvs_c_x(client: &HGVSClient) {
+    #[rstest]
+    fn test_request_and_validate_hgvs_c_x(client: HGVSClient) {
         let unvalidated_hgvs = "NM_000132.4:c.3637A>T";
         let validated_hgvs = client.request_and_validate_hgvs(unvalidated_hgvs).unwrap();
         assert_eq!(validated_hgvs.transcript_hgvs(), unvalidated_hgvs);
     }
 
-    fn test_request_and_validate_hgvs_n(client: &HGVSClient) {
+    #[rstest]
+    fn test_request_and_validate_hgvs_n(client: HGVSClient) {
         let unvalidated_hgvs = "NR_002196.1:n.601G>T";
         let validated_hgvs = client.request_and_validate_hgvs(unvalidated_hgvs).unwrap();
         assert_eq!(validated_hgvs.transcript_hgvs(), unvalidated_hgvs);
     }
 
-    fn test_request_and_validate_hgvs_m(client: &HGVSClient) {
+    #[rstest]
+    fn test_request_and_validate_hgvs_m(client: HGVSClient) {
         let unvalidated_hgvs = "NC_012920.1:m.616T>C";
         let validated_hgvs = client.request_and_validate_hgvs(unvalidated_hgvs).unwrap();
         assert_eq!(validated_hgvs.transcript_hgvs(), unvalidated_hgvs);
     }
 
-    fn test_request_and_validate_hgvs_wrong_reference_base_err(client: &HGVSClient) {
+    #[rstest]
+    fn test_request_and_validate_hgvs_wrong_reference_base_err(client: HGVSClient) {
         let unvalidated_hgvs = "NM_001173464.1:c.2860G>T";
         let result = client.request_and_validate_hgvs(unvalidated_hgvs);
         assert!(matches!(result, Err(HGVSError::InvalidHgvs { .. })));
     }
 
-    fn test_request_and_validate_hgvs_not_c_or_n_hgvs_err(client: &HGVSClient) {
+    #[rstest]
+    fn test_request_and_validate_hgvs_not_c_or_n_hgvs_err(client: HGVSClient) {
         let unvalidated_hgvs = "NC_000012.12:g.39332405G>A";
         let result = client.request_and_validate_hgvs(unvalidated_hgvs);
         assert!(matches!(

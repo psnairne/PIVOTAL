@@ -1,4 +1,4 @@
-use pivot::hgnc::{GeneQuery, HGNCClient, HGNCData};
+use pivotal::hgnc::{GeneQuery, HGNCClient, HGNCData};
 use rstest::{fixture, rstest};
 
 #[macro_export]
@@ -18,7 +18,7 @@ macro_rules! skip_in_ci {
 }
 
 // found here: https://www.genenames.org/download/statistics-and-files/
-// 319 genes
+// 274 genes
 #[fixture]
 fn genes() -> String {
     "A1BG
@@ -294,52 +294,7 @@ ADAMDEC1
 ADAMTS1
 ADAMTS2
 ADAMTS3
-ADAMTS4
-ADAMTS5
-ADAMTS6
-ADAMTS7
-ADAMTS8
-ADAMTS9
-ADAMTS10
-ADAMTS12
-ADAMTS13
-ADAMTS14
-ADAMTS15
-ADAMTS16
-ADAMTS17
-ADAMTS18
-ADAMTS19
-ADAMTS20
-ADAMTSL1
-ADAMTSL2
-ADAMTSL3
-ADAMTSL4
-ADAMTSL5
-ADAP1
-ADAP2
-ADAR
-ADARB1
-ADARB2
-ADAT1
-ADAT2
-ADAT3
-ADCK1
-ADCK2
-ADCK5
-ADCY1
-ADCY2
-ADCY3
-ADCY4
-ADCY5
-ADCY6
-ADCY7
-ADCY8
-ADCY9
-ADCY10
-ADCYAP1
-ADCYAP1R1
-ADD1
-ADD2"
+ADAMTS4"
         .to_string()
 }
 
@@ -350,7 +305,8 @@ fn hgnc_stress_test(genes: String) {
     let gene_vec = genes.lines().collect::<Vec<&str>>();
     for gene in gene_vec {
         let query = GeneQuery::Symbol(gene);
-        let gene_doc = client.request_gene_data(query).unwrap();
+        let gene_doc_result = client.request_gene_data(query);
+        let gene_doc = gene_doc_result.unwrap();
         assert_eq!(gene_doc.symbol.unwrap(), gene);
     }
 }

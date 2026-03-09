@@ -37,7 +37,7 @@
 //! ## HGVSClient
 //!
 //! ```rust
-//! use pivot::hgvs::{HGVSClient, HGVSData};
+//! use pivotal::hgvs::{HGVSClient, HGVSData};
 //!
 //! let client = HGVSClient::default();
 //! let hgvs_variant = client.request_and_validate_hgvs("NM_001173464.1:c.2860C>T").unwrap();
@@ -48,7 +48,7 @@
 //! ## CachedHGVSClient
 //!
 //! ```rust
-//! use pivot::hgvs::{CachedHGVSClient, HGVSClient, HGVSData};
+//! use pivotal::hgvs::{CachedHGVSClient, HGVSClient, HGVSData};
 //!
 //! let temp_dir = tempfile::tempdir().expect("Failed to create temporary directory");
 //! let cache_file_path = temp_dir.path().join("cache.hgvs");
@@ -65,11 +65,11 @@
 //! ## Creating VariantInterpretations from HgvsVariant objects
 //!
 //! ```rust
-//! use pivot::hgvs::{AlleleCount, ChromosomalSex, HGVSClient, HGVSData};
+//! use pivotal::hgvs::{AlleleCount, ChromosomalSex, HGVSClient, HGVSData};
 //!
 //! let client = HGVSClient::default();
 //! let hgvs_variant = client.request_and_validate_hgvs("NM_001173464.1:c.2860C>T").unwrap();
-//! let vi = hgvs_variant.create_variant_interpretation(AlleleCount::Single, ChromosomalSex::XX);
+//! let vi = hgvs_variant.create_variant_interpretation(AlleleCount::Single, &ChromosomalSex::XX);
 //!
 //! let vi_allelic_state = vi.unwrap().variation_descriptor.unwrap().allelic_state.unwrap().label;
 //! assert_eq!("heterozygous", vi_allelic_state);

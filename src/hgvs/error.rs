@@ -65,8 +65,6 @@ pub enum HGVSError {
     VariantValidatorAPI { hgvs: String, attempts: usize },
     #[error("VariantValidator response for {hgvs} had an unexpected format: {format_issue}")]
     VariantValidatorResponseUnexpectedFormat { hgvs: String, format_issue: String },
-    #[error("VariantValidator fetch request for {hgvs} failed. Error: {err}.")]
-    FetchRequest { hgvs: String, err: String },
     #[error(transparent)]
     CacheDatabase(#[from] DatabaseError),
     #[error(transparent)]
@@ -79,4 +77,6 @@ pub enum HGVSError {
     CacheStorage(#[from] StorageError),
     #[error(transparent)]
     CacherError(#[from] CacherError),
+    #[error("Something went wrong when using Mutex: {0}")]
+    MutexError(String),
 }

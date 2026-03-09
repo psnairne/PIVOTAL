@@ -30,4 +30,8 @@ pub enum HGNCError {
     CacheTable(#[from] TableError),
     #[error(transparent)]
     Request(#[from] reqwest::Error),
+    #[error("Something went wrong when using Mutex: {0}")]
+    MutexError(String),
+    #[error("HgncAPI returned an error on {attempts} attempts to retrieve data about gene {gene}")]
+    HgncAPI { gene: String, attempts: usize },
 }

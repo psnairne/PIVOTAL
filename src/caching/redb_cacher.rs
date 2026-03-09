@@ -79,17 +79,16 @@ impl<T: Cacheable> Default for RedbCacher<T> {
     fn default() -> Self {
         let pkg_name = env!("CARGO_PKG_NAME");
 
-        let pivot_cache_dir = ProjectDirs::from("", "", pkg_name)
+        let pivotal = ProjectDirs::from("", "", pkg_name)
             .map(|project_dir| project_dir.cache_dir().to_path_buf())
             .or_else(|| home_dir().map(|home| home.join(pkg_name)))
             .unwrap_or_else(|| panic!("Could not find cache directory or home directory."));
 
-        if !pivot_cache_dir.exists() {
-            fs::create_dir_all(&pivot_cache_dir)
-                .expect("Failed to create default cache directory.");
+        if !pivotal.exists() {
+            fs::create_dir_all(&pivotal).expect("Failed to create default cache directory.");
         }
 
-        RedbCacher::new(pivot_cache_dir.join(type_name::<T>()))
+        RedbCacher::new(pivotal.join(type_name::<T>()))
     }
 }
 

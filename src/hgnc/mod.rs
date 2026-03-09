@@ -43,7 +43,7 @@
 //! ## HGNCClient
 //!
 //! ```rust
-//! use pivot::hgnc::{HGNCClient, HGNCData, GeneQuery};
+//! use pivotal::hgnc::{HGNCClient, HGNCData, GeneQuery};
 //!
 //! let client = HGNCClient::default();
 //! let gene_symbol = client.request_gene_symbol(GeneQuery::from("HGNC:13089")).unwrap();
@@ -54,7 +54,7 @@
 //! ## CachedHGNCClient
 //!
 //! ```rust
-//! use pivot::hgnc::{HGNCClient, HGNCData, GeneQuery, CachedHGNCClient};
+//! use pivotal::hgnc::{HGNCClient, HGNCData, GeneQuery, CachedHGNCClient};
 //!
 //! let temp_dir = tempfile::tempdir().expect("Failed to create temporary directory");
 //! let cache_file_path = temp_dir.path().join("cache.hgnc");
