@@ -45,13 +45,11 @@ impl HGNCClient {
                 .get(url)
                 .header("User-Agent", "PIVOT")
                 .header("Accept", "application/json")
-                .send()
-                .map_err(|err| HGNCError::FetchRequest {
-                    gene: query.inner().to_string(),
-                    err: err.to_string(),
-                })?;
+                .send();
 
-            if response.status().is_success() {
+            if let Ok(response) = response
+                && response.status().is_success()
+            {
                 let gene_response = response.json::<GeneResponse>()?;
                 return Ok(gene_response.response.docs);
             }

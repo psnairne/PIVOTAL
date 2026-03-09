@@ -91,13 +91,11 @@ impl HGVSClient {
                 .get(fetch_url)
                 .header("User-Agent", "PIVOT")
                 .header("Accept", "application/json")
-                .send()
-                .map_err(|err| HGVSError::FetchRequest {
-                    hgvs: unvalidated_hgvs.to_string(),
-                    err: err.to_string(),
-                })?;
+                .send();
 
-            if response.status().is_success() {
+            if let Ok(response) = response
+                && response.status().is_success()
+            {
                 return response.json::<VariantValidatorResponse>().map_err(|err| {
                     HGVSError::DeserializeVariantValidatorResponseToSchema {
                         hgvs: unvalidated_hgvs.to_string(),

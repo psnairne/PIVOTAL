@@ -32,8 +32,6 @@ pub enum HGNCError {
     Request(#[from] reqwest::Error),
     #[error("Something went wrong when using Mutex: {0}")]
     MutexError(String),
-    #[error("HGNC fetch request for {gene} failed. Error: {err}.")]
-    FetchRequest { gene: String, err: String },
     #[error("HgncAPI returned an error on {attempts} attempts to retrieve data about gene {gene}")]
     HgncAPI { gene: String, attempts: usize },
 }
