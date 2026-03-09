@@ -5,38 +5,62 @@ use crate::hgnc::traits::HGNCData;
 use ratelimit::Ratelimiter;
 use reqwest::blocking::Client;
 use std::fmt::{Debug, Formatter};
+use std::sync::OnceLock;
 use std::thread::sleep;
 use std::time::Duration;
 
+static HGNC_RATE_LIMITER: OnceLock<Ratelimiter> = OnceLock::new();
+
+fn hgnc_rate_limiter() -> &'static Ratelimiter {
+    HGNC_RATE_LIMITER.get_or_init(|| {
+        Ratelimiter::builder(10, Duration::from_millis(1100))
+            .max_tokens(10)
+            .build()
+            .expect("Building rate limiter failed")
+    })
+}
+
 pub struct HGNCClient {
-    rate_limiter: Ratelimiter,
+    attempts: usize,
     api_url: String,
     client: Client,
 }
 
 impl HGNCClient {
-    pub fn new(rate_limiter: Ratelimiter, api_url: String) -> Self {
+    pub fn new(attempts: usize, api_url: String) -> Self {
         HGNCClient {
-            rate_limiter,
+            attempts,
             api_url,
             client: Client::new(),
         }
     }
 
-    fn fetch_request(&self, url: &str) -> Result<Vec<GeneDoc>, HGNCError> {
-        if let Err(duration) = self.rate_limiter.try_wait() {
-            sleep(duration);
+    fn fetch_request(&self, url: &str, query: &GeneQuery) -> Result<Vec<GeneDoc>, HGNCError> {
+        for _ in 0..self.attempts {
+            if let Err(duration) = hgnc_rate_limiter().try_wait() {
+                sleep(duration);
+            }
+            let response = self
+                .client
+                .get(url)
+                .header("User-Agent", "PIVOT")
+                .header("Accept", "application/json")
+                .send()
+                .map_err(|err| HGNCError::FetchRequest {
+                    gene: query.inner().to_string(),
+                    err: err.to_string(),
+                })?;
+
+            if response.status().is_success() {
+                let gene_response = response.json::<GeneResponse>()?;
+                return Ok(gene_response.response.docs);
+            }
         }
-        let response = self
-            .client
-            .get(url)
-            .header("User-Agent", "PIVOT")
-            .header("Accept", "application/json")
-            .send()?;
 
-        let gene_response = response.json::<GeneResponse>()?;
-
-        Ok(gene_response.response.docs)
+        Err(HGNCError::HgncAPI {
+            gene: query.inner().to_string(),
+            attempts: self.attempts,
+        })
     }
 }
 
@@ -46,7 +70,7 @@ impl HGNCData for HGNCClient {
             GeneQuery::Symbol(symbol) => format!("{}fetch/symbol/{}", self.api_url, symbol),
             GeneQuery::HgncId(id) => format!("{}fetch/hgnc_id/{}", self.api_url, id),
         };
-        let docs = self.fetch_request(&fetch_url)?;
+        let docs = self.fetch_request(&fetch_url, &query)?;
 
         if docs.len() == 1 {
             Ok(docs.first().unwrap().clone())
@@ -62,12 +86,7 @@ impl HGNCData for HGNCClient {
 
 impl Default for HGNCClient {
     fn default() -> Self {
-        let rate_limiter = Ratelimiter::builder(10, Duration::from_secs(1))
-            .max_tokens(10)
-            .build()
-            .expect("Building rate limiter failed");
-
-        HGNCClient::new(rate_limiter, "https://rest.genenames.org/".to_string())
+        HGNCClient::new(3, "https://rest.genenames.org/".to_string())
     }
 }
 
