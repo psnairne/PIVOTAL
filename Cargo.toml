@@ -8,7 +8,7 @@ name = "pivotal"
 version = "0.1.6"
 keywords = ["variant", "validator", "hgnc", "hgvs", "phenopacket"]
 readme = "README.md"
-repository = "https://github.com/psnairne/PIVOT"
+repository = "https://github.com/psnairne/PIVOTAL"
 
 
 [dependencies]
