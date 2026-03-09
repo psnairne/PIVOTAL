@@ -50,7 +50,10 @@ impl HGNCData for CachedHGNCClient {
 impl CachedHGNCClient {
     pub fn new(cache_file_path: PathBuf, hgnc_client: HGNCClient) -> Result<Self, HGNCError> {
         let cacher = RedbCacher::new(cache_file_path);
-        cacher.init_cache()?;
+        {
+            let _guard = lock_mutex(hgnc_cache_mutex())?;
+            cacher.init_cache()?;
+        }
         Ok(CachedHGNCClient {
             cacher,
             hgnc_client,
@@ -60,7 +63,10 @@ impl CachedHGNCClient {
     pub fn new_with_defaults() -> Result<Self, HGNCError> {
         let cacher = RedbCacher::default();
         let hgnc_client = HGNCClient::default();
-        cacher.init_cache()?;
+        {
+            let _guard = lock_mutex(hgnc_cache_mutex())?;
+            cacher.init_cache()?;
+        }
         Ok(CachedHGNCClient {
             cacher,
             hgnc_client,
