@@ -7,6 +7,19 @@ use crate::hgvs::hgvs_client::HGVSClient;
 use crate::hgvs::hgvs_variant::HgvsVariant;
 use crate::hgvs::traits::HGVSData;
 use std::path::PathBuf;
+use std::sync::{Mutex, MutexGuard, OnceLock};
+
+static HGVS_CACHE_LOCK: OnceLock<Mutex<()>> = OnceLock::new();
+
+fn hgvs_cache_mutex() -> &'static Mutex<()> {
+    HGVS_CACHE_LOCK.get_or_init(|| Mutex::new(()))
+}
+
+fn lock_mutex(mutex: &'_ Mutex<()>) -> Result<MutexGuard<'_, ()>, HGVSError> {
+    mutex
+        .lock()
+        .map_err(|e| HGVSError::MutexError(e.to_string()))
+}
 
 #[derive(Debug)]
 pub struct CachedHGVSClient {
@@ -37,16 +50,27 @@ impl CachedHGVSClient {
 
 impl HGVSData for CachedHGVSClient {
     fn request_and_validate_hgvs(&self, unvalidated_hgvs: &str) -> Result<HgvsVariant, HGVSError> {
-        let cache = self.cacher.open_cache()?;
-        if let Some(hgvs_variant) = self.cacher.find_cache_entry(unvalidated_hgvs, &cache) {
-            return Ok(hgvs_variant);
+        {
+            let _guard = lock_mutex(hgvs_cache_mutex())?;
+
+            let cache = self.cacher.open_cache()?;
+            if let Some(hgvs_variant) = self.cacher.find_cache_entry(unvalidated_hgvs, &cache) {
+                return Ok(hgvs_variant);
+            }
         }
 
         let hgvs_variant = self
             .hgvs_client
             .request_and_validate_hgvs(unvalidated_hgvs)?;
-        self.cacher.cache_object(hgvs_variant.clone(), &cache)?;
-        Ok(hgvs_variant.clone())
+
+        {
+            let _guard = lock_mutex(hgvs_cache_mutex())?;
+
+            let cache = self.cacher.open_cache()?;
+            self.cacher.cache_object(hgvs_variant.clone(), &cache)?;
+        }
+
+        Ok(hgvs_variant)
     }
 }
 

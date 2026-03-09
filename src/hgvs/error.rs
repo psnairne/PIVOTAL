@@ -79,4 +79,6 @@ pub enum HGVSError {
     CacheStorage(#[from] StorageError),
     #[error(transparent)]
     CacherError(#[from] CacherError),
+    #[error("Something went wrong when using Mutex: {0}")]
+    MutexError(String),
 }

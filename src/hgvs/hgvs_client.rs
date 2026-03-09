@@ -79,7 +79,7 @@ impl HGVSClient {
 
     fn fetch_request(
         &self,
-        fetch_url: String,
+        fetch_url: &str,
         unvalidated_hgvs: &str,
     ) -> Result<VariantValidatorResponse, HGVSError> {
         for _ in 0..self.attempts {
@@ -169,7 +169,7 @@ impl HGVSData for HGVSClient {
 
         let fetch_url = self.get_fetch_url(transcript, allele);
 
-        let response = self.fetch_request(fetch_url.clone(), unvalidated_hgvs)?;
+        let response = self.fetch_request(&fetch_url, unvalidated_hgvs)?;
 
         let variant_info = Self::get_variant_info_for_valid_hgvs(unvalidated_hgvs, response)?;
 

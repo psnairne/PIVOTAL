@@ -6,6 +6,19 @@ use crate::hgnc::json_schema::GeneDoc;
 use crate::hgnc::traits::HGNCData;
 use std::fmt::{Debug, Formatter};
 use std::path::PathBuf;
+use std::sync::{Mutex, MutexGuard, OnceLock};
+
+static HGNC_CACHE_LOCK: OnceLock<Mutex<()>> = OnceLock::new();
+
+fn hgnc_cache_mutex() -> &'static Mutex<()> {
+    HGNC_CACHE_LOCK.get_or_init(|| Mutex::new(()))
+}
+
+fn lock_mutex(mutex: &'_ Mutex<()>) -> Result<MutexGuard<'_, ()>, HGNCError> {
+    mutex
+        .lock()
+        .map_err(|e| HGNCError::MutexError(e.to_string()))
+}
 
 pub struct CachedHGNCClient {
     cacher: RedbCacher<GeneDoc>,
@@ -14,13 +27,22 @@ pub struct CachedHGNCClient {
 
 impl HGNCData for CachedHGNCClient {
     fn request_gene_data(&self, query: GeneQuery) -> Result<GeneDoc, HGNCError> {
-        let cache = self.cacher.open_cache()?;
-        if let Some(gene_doc) = self.cacher.find_cache_entry(query.inner(), &cache) {
-            return Ok(gene_doc);
+        {
+            let _guard = lock_mutex(hgnc_cache_mutex())?;
+            let cache = self.cacher.open_cache()?;
+            if let Some(gene_doc) = self.cacher.find_cache_entry(query.inner(), &cache) {
+                return Ok(gene_doc);
+            }
         }
 
         let doc = self.hgnc_client.request_gene_data(query)?;
-        self.cacher.cache_object(doc.clone(), &cache)?;
+
+        {
+            let _guard = lock_mutex(hgnc_cache_mutex())?;
+            let cache = self.cacher.open_cache()?;
+            self.cacher.cache_object(doc.clone(), &cache)?;
+        }
+
         Ok(doc)
     }
 }

@@ -30,4 +30,6 @@ pub enum HGNCError {
     CacheTable(#[from] TableError),
     #[error(transparent)]
     Request(#[from] reqwest::Error),
+    #[error("Something went wrong when using Mutex: {0}")]
+    MutexError(String),
 }
