@@ -9,6 +9,10 @@ pub enum HGVSError {
         "Variant Validator did not accept submitted HGVS {hgvs}. Validation warnings: {problems:?}"
     )]
     InvalidHgvs { hgvs: String, problems: Vec<String> },
+    #[error(
+        "Could not find corresponding HgvsVariant object in the MockHGVSClient for unvalidated hgvs {unvalidated_hgvs}."
+    )]
+    MockClient { unvalidated_hgvs: String },
     #[error("Hgvs string {hgvs} not accepted due to format problem: {problem}.")]
     HgvsFormatNotAccepted { hgvs: String, problem: String },
     #[error(

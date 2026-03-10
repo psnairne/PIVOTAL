@@ -20,6 +20,10 @@
 //!
 //! A cached implementation of the HGVSData trait. The HgvsVariant objects will be cached and can thereafter be accessed without an API call.
 //!
+//! # [`MockHGVSClient`]
+//!
+//! A mocked implementation of the HGVSData trait for tests and CI.
+//!
 //! # [`AlleleCount`]
 //!
 //! An enum with two variants Single and Double. This is used for create a VariantInterpretation from a HgvsVariant object.
@@ -81,6 +85,7 @@ pub use enums::ChromosomalSex;
 pub use error::HGVSError;
 pub use hgvs_client::HGVSClient;
 pub use hgvs_variant::HgvsVariant;
+pub use mock_hgvs_client::MockHGVSClient;
 pub use traits::HGVSData;
 
 mod cached_hgvs_client;
@@ -89,5 +94,6 @@ mod error;
 mod hgvs_client;
 mod hgvs_variant;
 mod json_schema;
+mod mock_hgvs_client;
 mod traits;
 mod utils;
